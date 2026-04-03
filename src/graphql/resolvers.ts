@@ -44,7 +44,14 @@ export const root = {
     const user = requireAuth(ctx);
     requireRole(user.role, [Role.ANALYST, Role.ADMIN]);
     const weeks = Math.min(args.weeks ?? 12, 52);
-    return dashboardService.getWeeklyTrends(weeks);
+    const rows = await dashboardService.getWeeklyTrends(weeks);
+    return rows.map((row) => ({
+      ...row,
+      weekStart:
+        row.weekStart instanceof Date
+          ? row.weekStart.toISOString()
+          : String(row.weekStart),
+    }));
   },
 
   dashboardRecentActivity: async (

@@ -89,7 +89,7 @@
  *             MonthlyTrends:
  *               summary: Fetch monthly trends (Analyst/Admin)
  *               value:
- *                 query: "query ($months: Int!) { dashboardMonthlyTrends(months: $months) { month income expenses } }"
+ *                 query: "query ($months: Int) { dashboardMonthlyTrends(months: $months) { month type total count } }"
  *                 variables:
  *                   months: 12
  *     responses:
