@@ -21,7 +21,20 @@ export function validate(schema: z.ZodType, source: "body" | "query" | "params" 
       res.status(400).json(response);
       return;
     }
-    req[source] = result.data;
+
+    // Express 5 exposes `req.query` (and sometimes `req.params`) as getter-only.
+    // Do not assign to `req[source]` directly; mutate the existing object.
+    if (source === "body") {
+      (req as any).body = result.data;
+    } else {
+      const target = (req as any)[source];
+      if (target && typeof target === "object") {
+        for (const key of Object.keys(target)) {
+          delete target[key];
+        }
+        Object.assign(target, result.data as any);
+      }
+    }
     next();
   };
 }

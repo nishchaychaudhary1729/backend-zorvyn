@@ -4,10 +4,17 @@ module.exports = {
   testEnvironment: "node",
   roots: ["<rootDir>/tests"],
   testMatch: ["**/*.test.ts"],
-  setupFilesAfterSetup: ["<rootDir>/tests/setup.ts"],
+  setupFilesAfterEnv: ["<rootDir>/tests/setup.ts"],
   testTimeout: 30000,
-  moduleNameMapper: {
-    "^@/(.*)$": "<rootDir>/src/$1",
+  transform: {
+    "^.+\\.tsx?$": [
+      "ts-jest",
+      {
+        diagnostics: {
+          ignoreCodes: [151002],
+        },
+      },
+    ],
   },
   clearMocks: true,
   collectCoverageFrom: ["src/**/*.ts", "!src/server.ts"],

@@ -1,6 +1,6 @@
 # Finance Dashboard Backend
 
-A RESTful backend API for a finance dashboard system built with **Node.js**, **Express**, **TypeScript**, **Prisma**, and **PostgreSQL**. Features role-based access control (RBAC), JWT authentication with refresh tokens, financial record management, and dashboard analytics.
+A backend API for a finance dashboard system built with **Node.js**, **Express**, **TypeScript**, **Prisma**, and **PostgreSQL**. It exposes REST endpoints for auth/users/records and a GraphQL endpoint (`POST /graphql`) for dashboard analytics.
 
 ## Tech Stack
 
@@ -21,13 +21,14 @@ A RESTful backend API for a finance dashboard system built with **Node.js**, **E
 ```
 src/
 ├── config/          # App config & Swagger setup
+├── graphql/         # GraphQL schema/resolvers (dashboard analytics)
 ├── lib/             # Prisma client singleton
 ├── middleware/       # Auth, RBAC, validation, error handling, rate limiting
 ├── modules/
 │   ├── auth/        # Register, login, refresh, logout
 │   ├── users/       # User CRUD (admin-only)
 │   ├── records/     # Financial record CRUD with filtering
-│   └── dashboard/   # Summary & analytics endpoints
+│   └── dashboard/   # Dashboard service logic (used by GraphQL)
 ├── types/           # TypeScript interfaces
 ├── utils/           # Error classes, API response helpers, pagination
 ├── app.ts           # Express app setup
@@ -56,7 +57,6 @@ src/
 ### 1. Clone & Install
 
 ```bash
-cd backend
 npm install
 ```
 
@@ -77,7 +77,6 @@ cp .env.example .env
 
 ```bash
 npx prisma migrate dev --name init
-npx prisma db seed
 ```
 
 ### 5. Start Development Server
@@ -91,6 +90,8 @@ Server runs at `http://localhost:3000`
 ### 6. Explore API Docs
 
 Open `http://localhost:3000/api/docs` for Swagger UI.
+
+Note: Swagger documents the REST API plus the single GraphQL endpoint (`POST /graphql`). Dashboard analytics are not exposed as `/api/dashboard/*` REST routes.
 
 ## Seeded Users
 
@@ -140,14 +141,19 @@ All seeded users share the password: `Password123!`
 - `sortBy` — Sort by `date`, `amount`, or `createdAt`
 - `order` — `asc` or `desc`
 
-### Dashboard
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/api/dashboard/summary` | All roles | Total income, expenses, net balance |
-| GET | `/api/dashboard/categories` | All roles | Category-wise totals |
-| GET | `/api/dashboard/trends/monthly` | Analyst, Admin | Monthly income/expense trends |
-| GET | `/api/dashboard/trends/weekly` | Analyst, Admin | Weekly trends |
-| GET | `/api/dashboard/recent` | All roles | Recent activity |
+### Dashboard (GraphQL)
+
+REST dashboard endpoints are replaced by a single GraphQL endpoint:
+
+- `POST /graphql`
+
+Available queries:
+
+- `dashboardSummary` (Viewer/Analyst/Admin)
+- `dashboardCategoryTotals` (Viewer/Analyst/Admin)
+- `dashboardRecentActivity(limit: Int)` (Viewer/Analyst/Admin)
+- `dashboardMonthlyTrends(months: Int)` (Analyst/Admin)
+- `dashboardWeeklyTrends(weeks: Int)` (Analyst/Admin)
 
 ## Running Tests
 

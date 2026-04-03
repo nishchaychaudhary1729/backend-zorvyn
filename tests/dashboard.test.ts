@@ -72,76 +72,102 @@ afterAll(async () => {
 describe("GET /api/dashboard/summary", () => {
   it("should return summary (Viewer)", async () => {
     const res = await request(app)
-      .get("/api/dashboard/summary")
-      .set("Authorization", `Bearer ${viewerToken}`);
+      .post("/graphql")
+      .set("Authorization", `Bearer ${viewerToken}`)
+      .send({
+        query: `query { dashboardSummary { totalIncome totalExpenses netBalance incomeCount expenseCount } }`,
+      });
 
     expect(res.status).toBe(200);
-    expect(res.body.data).toHaveProperty("totalIncome");
-    expect(res.body.data).toHaveProperty("totalExpenses");
-    expect(res.body.data).toHaveProperty("netBalance");
-    expect(res.body.data.totalIncome).toBe(7000);
-    expect(res.body.data.totalExpenses).toBe(2000);
-    expect(res.body.data.netBalance).toBe(5000);
+    expect(res.body.data).toHaveProperty("dashboardSummary");
+    expect(res.body.data.dashboardSummary).toHaveProperty("totalIncome");
+    expect(res.body.data.dashboardSummary).toHaveProperty("totalExpenses");
+    expect(res.body.data.dashboardSummary).toHaveProperty("netBalance");
+    expect(res.body.data.dashboardSummary.totalIncome).toBe(7000);
+    expect(res.body.data.dashboardSummary.totalExpenses).toBe(2000);
+    expect(res.body.data.dashboardSummary.netBalance).toBe(5000);
   });
 
   it("should reject unauthenticated request", async () => {
-    const res = await request(app).get("/api/dashboard/summary");
-    expect(res.status).toBe(401);
+    const res = await request(app)
+      .post("/graphql")
+      .send({ query: `query { dashboardSummary { totalIncome } }` });
+    expect(res.status).toBe(200);
+    expect(res.body.errors?.[0]?.message).toMatch(/Unauthorized|authorization/i);
   });
 });
 
 describe("GET /api/dashboard/categories", () => {
   it("should return category totals", async () => {
     const res = await request(app)
-      .get("/api/dashboard/categories")
-      .set("Authorization", `Bearer ${viewerToken}`);
+      .post("/graphql")
+      .set("Authorization", `Bearer ${viewerToken}`)
+      .send({
+        query: `query { dashboardCategoryTotals { category type total count } }`,
+      });
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body.data)).toBe(true);
-    expect(res.body.data.length).toBeGreaterThan(0);
-    expect(res.body.data[0]).toHaveProperty("category");
-    expect(res.body.data[0]).toHaveProperty("total");
+    expect(Array.isArray(res.body.data.dashboardCategoryTotals)).toBe(true);
+    expect(res.body.data.dashboardCategoryTotals.length).toBeGreaterThan(0);
+    expect(res.body.data.dashboardCategoryTotals[0]).toHaveProperty("category");
+    expect(res.body.data.dashboardCategoryTotals[0]).toHaveProperty("total");
   });
 });
 
 describe("GET /api/dashboard/trends/monthly", () => {
   it("should return monthly trends (Analyst)", async () => {
     const res = await request(app)
-      .get("/api/dashboard/trends/monthly")
-      .set("Authorization", `Bearer ${analystToken}`);
+      .post("/graphql")
+      .set("Authorization", `Bearer ${analystToken}`)
+      .send({
+        query: `query($months: Int) { dashboardMonthlyTrends(months: $months) { month type total count } }`,
+        variables: { months: 12 },
+      });
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(Array.isArray(res.body.data.dashboardMonthlyTrends)).toBe(true);
   });
 
   it("should reject viewer accessing trends", async () => {
     const res = await request(app)
-      .get("/api/dashboard/trends/monthly")
-      .set("Authorization", `Bearer ${viewerToken}`);
+      .post("/graphql")
+      .set("Authorization", `Bearer ${viewerToken}`)
+      .send({
+        query: `query { dashboardMonthlyTrends { month } }`,
+      });
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(200);
+    expect(res.body.errors?.[0]?.message).toMatch(/permission|Forbidden/i);
   });
 });
 
 describe("GET /api/dashboard/trends/weekly", () => {
   it("should return weekly trends (Analyst)", async () => {
     const res = await request(app)
-      .get("/api/dashboard/trends/weekly")
-      .set("Authorization", `Bearer ${analystToken}`);
+      .post("/graphql")
+      .set("Authorization", `Bearer ${analystToken}`)
+      .send({
+        query: `query($weeks: Int) { dashboardWeeklyTrends(weeks: $weeks) { week weekStart type total count } }`,
+        variables: { weeks: 12 },
+      });
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(Array.isArray(res.body.data.dashboardWeeklyTrends)).toBe(true);
   });
 });
 
 describe("GET /api/dashboard/recent", () => {
   it("should return recent activity", async () => {
     const res = await request(app)
-      .get("/api/dashboard/recent?limit=3")
-      .set("Authorization", `Bearer ${viewerToken}`);
+      .post("/graphql")
+      .set("Authorization", `Bearer ${viewerToken}`)
+      .send({
+        query: `query($limit: Int) { dashboardRecentActivity(limit: $limit) { id amount type category date createdAt createdBy { id name } } }`,
+        variables: { limit: 3 },
+      });
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body.data)).toBe(true);
-    expect(res.body.data.length).toBeLessThanOrEqual(3);
+    expect(Array.isArray(res.body.data.dashboardRecentActivity)).toBe(true);
+    expect(res.body.data.dashboardRecentActivity.length).toBeLessThanOrEqual(3);
   });
 });

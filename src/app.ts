@@ -3,21 +3,27 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
+import { createHandler } from "graphql-http/lib/use/express";
 import { swaggerSpec } from "./config/swagger";
 import { rateLimiter } from "./middleware/rateLimiter";
 import { errorHandler } from "./middleware/errorHandler";
+import { schema } from "./graphql/schema";
+import { root } from "./graphql/resolvers";
+import { getAuthorizationFromRequest, getUserFromAuthHeader } from "./graphql/context";
+import { AppError } from "./utils/errors";
 
 import authRoutes from "./modules/auth/auth.routes";
 import usersRoutes from "./modules/users/users.routes";
 import recordsRoutes from "./modules/records/records.routes";
-import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 
 const app = express();
 
 // Global middleware
 app.use(helmet());
 app.use(cors());
-app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
+if (process.env.NODE_ENV !== "test") {
+  app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
+}
 app.use(express.json({ limit: "10kb" }));
 app.use(rateLimiter);
 
@@ -34,7 +40,40 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/records", recordsRoutes);
-app.use("/api/dashboard", dashboardRoutes);
+
+// GraphQL (Dashboard only)
+app.use(
+  "/graphql",
+  createHandler({
+    schema,
+    rootValue: root,
+    context: (req) => {
+      let user;
+      try {
+        const authorization = getAuthorizationFromRequest(req);
+        user = getUserFromAuthHeader(authorization);
+      } catch {
+        user = undefined;
+      }
+      return { req, user };
+    },
+    formatError: (err: any) => {
+      const original = err?.originalError;
+      if (original instanceof AppError) {
+        return {
+          message: original.message,
+          locations: err.locations,
+          path: err.path,
+          extensions: {
+            code: original.statusCode,
+            http: { status: original.statusCode },
+          },
+        };
+      }
+      return err;
+    },
+  })
+);
 
 // 404 handler
 app.use((_req, res) => {

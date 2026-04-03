@@ -28,9 +28,9 @@ export async function getSummary() {
 }
 
 export async function getCategoryTotals() {
-  const results = await prisma.$queryRaw<
-    { type: string; category: string; total: Prisma.Decimal; count: bigint }[]
-  >`
+  type Row = { type: string; category: string; total: Prisma.Decimal; count: number };
+
+  const results = await prisma.$queryRaw<Row[]>`
     SELECT type, category, SUM(amount) as total, COUNT(*)::int as count
     FROM financial_records
     WHERE deleted_at IS NULL
@@ -38,18 +38,18 @@ export async function getCategoryTotals() {
     ORDER BY total DESC
   `;
 
-  return results.map((r) => ({
+  return results.map((r: Row) => ({
     type: r.type,
     category: r.category,
     total: Number(r.total),
-    count: Number(r.count),
+    count: r.count,
   }));
 }
 
 export async function getMonthlyTrends(months = 12) {
-  const results = await prisma.$queryRaw<
-    { month: string; type: string; total: Prisma.Decimal; count: bigint }[]
-  >`
+  type Row = { month: string; type: string; total: Prisma.Decimal; count: number };
+
+  const results = await prisma.$queryRaw<Row[]>`
     SELECT 
       TO_CHAR(date, 'YYYY-MM') as month,
       type,
@@ -57,16 +57,16 @@ export async function getMonthlyTrends(months = 12) {
       COUNT(*)::int as count
     FROM financial_records
     WHERE deleted_at IS NULL
-      AND date >= NOW() - MAKE_INTERVAL(months => ${months})
+      AND date >= NOW() - MAKE_INTERVAL(months => ${months}::int)
     GROUP BY month, type
     ORDER BY month ASC, type ASC
   `;
 
-  return results.map((r) => ({
+  return results.map((r: Row) => ({
     month: r.month,
     type: r.type,
     total: Number(r.total),
-    count: Number(r.count),
+    count: r.count,
   }));
 }
 
@@ -89,9 +89,15 @@ export async function getRecentActivity(limit = 10) {
 }
 
 export async function getWeeklyTrends(weeks = 12) {
-  const results = await prisma.$queryRaw<
-    { week: string; week_start: Date; type: string; total: Prisma.Decimal; count: bigint }[]
-  >`
+  type Row = {
+    week: string;
+    week_start: Date;
+    type: string;
+    total: Prisma.Decimal;
+    count: number;
+  };
+
+  const results = await prisma.$queryRaw<Row[]>`
     SELECT 
       TO_CHAR(DATE_TRUNC('week', date), 'YYYY-"W"IW') as week,
       DATE_TRUNC('week', date) as week_start,
@@ -100,16 +106,16 @@ export async function getWeeklyTrends(weeks = 12) {
       COUNT(*)::int as count
     FROM financial_records
     WHERE deleted_at IS NULL
-      AND date >= NOW() - MAKE_INTERVAL(weeks => ${weeks})
+      AND date >= NOW() - MAKE_INTERVAL(weeks => ${weeks}::int)
     GROUP BY week, week_start, type
     ORDER BY week_start ASC, type ASC
   `;
 
-  return results.map((r) => ({
+  return results.map((r: Row) => ({
     week: r.week,
     weekStart: r.week_start,
     type: r.type,
     total: Number(r.total),
-    count: Number(r.count),
+    count: r.count,
   }));
 }

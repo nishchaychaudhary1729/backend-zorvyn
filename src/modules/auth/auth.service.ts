@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import { Prisma } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import prisma from "../../lib/prisma";
@@ -10,7 +11,7 @@ import {
   UnauthorizedError,
 } from "../../utils/errors";
 
-const SALT_ROUNDS = 12;
+const SALT_ROUNDS = 8;
 
 function generateAccessToken(payload: JwtPayload): string {
   return jwt.sign(payload, config.jwt.secret, {
@@ -33,15 +34,20 @@ function getRefreshTokenExpiry(): Date {
 }
 
 export async function register(email: string, password: string, name: string) {
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) throw new ConflictError("Email is already registered");
-
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-  const user = await prisma.user.create({
-    data: { email, password: hashedPassword, name },
-    select: { id: true, email: true, name: true, role: true, status: true, createdAt: true },
-  });
+  let user: { id: string; email: string; name: string; role: any; status: any; createdAt: Date };
+  try {
+    user = await prisma.user.create({
+      data: { email, password: hashedPassword, name },
+      select: { id: true, email: true, name: true, role: true, status: true, createdAt: true },
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      throw new ConflictError("Email is already registered");
+    }
+    throw err;
+  }
 
   const tokenPayload: JwtPayload = { userId: user.id, role: user.role };
   const accessToken = generateAccessToken(tokenPayload);

@@ -67,20 +67,24 @@ export async function createUser(data: {
   name: string;
   role?: Role;
 }) {
-  const existing = await prisma.user.findUnique({ where: { email: data.email } });
-  if (existing) throw new ConflictError("Email is already registered");
+  const hashedPassword = await bcrypt.hash(data.password, 8);
 
-  const hashedPassword = await bcrypt.hash(data.password, 12);
-
-  return prisma.user.create({
-    data: {
-      email: data.email,
-      password: hashedPassword,
-      name: data.name,
-      role: data.role || Role.VIEWER,
-    },
-    select: USER_SELECT,
-  });
+  try {
+    return await prisma.user.create({
+      data: {
+        email: data.email,
+        password: hashedPassword,
+        name: data.name,
+        role: data.role || Role.VIEWER,
+      },
+      select: USER_SELECT,
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      throw new ConflictError("Email is already registered");
+    }
+    throw err;
+  }
 }
 
 export async function updateUser(
