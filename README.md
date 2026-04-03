@@ -16,23 +16,25 @@ A backend API for a finance dashboard system built with **Node.js**, **Express**
 | Testing | Jest + Supertest |
 | Containerization | Docker Compose |
 
-## Architecture
+## Architecture & Project Structure
+
+The project follows a modular, feature-based architecture to establish clear boundaries and simplify maintenance.
 
 ```
 src/
-├── config/          # App config & Swagger setup
-├── graphql/         # GraphQL schema/resolvers (dashboard analytics)
-├── lib/             # Prisma client singleton
-├── middleware/       # Auth, RBAC, validation, error handling, rate limiting
-├── modules/
-│   ├── auth/        # Register, login, refresh, logout
-│   ├── users/       # User CRUD (admin-only)
-│   ├── records/     # Financial record CRUD with filtering
-│   └── dashboard/   # Dashboard service logic (used by GraphQL)
-├── types/           # TypeScript interfaces
-├── utils/           # Error classes, API response helpers, pagination
-├── app.ts           # Express app setup
-└── server.ts        # Entry point
+├── config/          # App config & Swagger setup (Environment validation, secrets mapping)
+├── graphql/         # GraphQL schema & resolvers (Consolidates all dashboard analytics)
+├── lib/             # Third-party instance singletons (e.g., Prisma client setup)
+├── middleware/      # Cross-cutting concerns (Auth, RBAC, Validation, Error Handling, Request Tracing)
+├── modules/         # Feature domains
+│   ├── auth/        # Register, login, refresh, logout logic
+│   ├── users/       # User CRUD operations (Admin-only capabilities)
+│   ├── records/     # Financial record CRUD (Pagination, filtering, constraints)
+│   └── dashboard/   # Dashboard service logic (Abstracted for GraphQL usage)
+├── types/           # Global TypeScript interfaces and custom extensions (e.g., Express Request)
+├── utils/           # Utilities (Custom AppError classes, Pagination helpers, API standard responses)
+├── app.ts           # Express application scaffolding & global middleware chaining
+└── server.ts        # Entry point (Handles graceful shutdown and DB connectivity checks)
 ```
 
 ## Roles & Permissions
@@ -46,6 +48,8 @@ src/
 | List/view financial records | ✅ | ✅ | ✅ |
 | Create/update/delete records | ❌ | ❌ | ✅ |
 | Manage users | ❌ | ❌ | ✅ |
+
+*(Note: Admins are prevented from deleting or deactivating their own accounts to ensure system recoverability.)*
 
 ## Quick Start
 
@@ -103,6 +107,31 @@ All seeded users share the password: `Password123!`
 | analyst@finance.com | ANALYST |
 | viewer@finance.com | VIEWER |
 
+## Standardized Responses
+
+### Success Response
+```json
+{
+  "success": true,
+  "message": "Resource retrieved",
+  "data": { ... },
+  "pagination": { "page": 1, "limit": 20, "total": 45, "totalPages": 3 }
+}
+```
+
+### Error Response Format
+All errors return a consistent envelope, making it easy for frontends to handle validation or operational failures.
+```json
+{
+  "success": false,
+  "message": "Validation failed",
+  "errors": {
+    "body.email": ["Invalid email address"]
+  },
+  "requestId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
 ## API Endpoints
 
 ### Auth
@@ -141,51 +170,70 @@ All seeded users share the password: `Password123!`
 - `sortBy` — Sort by `date`, `amount`, or `createdAt`
 - `order` — `asc` or `desc`
 
-### Dashboard (GraphQL)
+## Dashboard (GraphQL)
 
-REST dashboard endpoints are replaced by a single GraphQL endpoint:
+REST dashboard endpoints are replaced by a single GraphQL endpoint (`POST /graphql`).  
+Below are some handy curl examples to query the dashboard data. *(Replace `YOUR_TOKEN` with a valid JWT access token).*
 
-- `POST /graphql`
+### 1. Dashboard Summary (All roles)
+```bash
+curl -X POST http://localhost:3000/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"query": "query { dashboardSummary { totalIncome totalExpenses netBalance } }"}'
+```
 
-Available queries:
+### 2. Monthly Trends (Analyst/Admin)
+```bash
+curl -X POST http://localhost:3000/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "query": "query($months: Int) { dashboardMonthlyTrends(months: $months) { month type total count } }",
+    "variables": {"months": 12}
+  }'
+```
 
-- `dashboardSummary` (Viewer/Analyst/Admin)
-- `dashboardCategoryTotals` (Viewer/Analyst/Admin)
-- `dashboardRecentActivity(limit: Int)` (Viewer/Analyst/Admin)
-- `dashboardMonthlyTrends(months: Int)` (Analyst/Admin)
-- `dashboardWeeklyTrends(weeks: Int)` (Analyst/Admin)
+### 3. Recent Activity (All roles)
+```bash
+curl -X POST http://localhost:3000/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"query": "query { dashboardRecentActivity(limit: 5) { amount type category date } }"}'
+```
+
+## Assumptions & Tradeoffs
+
+1. **GraphQL over REST for Analytics:** We opted for a single GraphQL `/graphql` endpoint for dashboard analytics rather than scattered REST routes. This enables clients to fetch precisely the data fragments they need (Summary + Trends) in a single round-trip, optimizing for dashboard UI rendering speeds.
+2. **Soft Deletes Strategy:** Instead of hard-deleting records and users, we utilize a `deletedAt` timestamp. This preserves foreign-key relationships, retains a traceable audit history for financial queries, and avoids accidental data loss. Constraints and queries actively map to filter out `deletedAt` rows.
+3. **Database Precision:** Storing monetary values as floating-point types introduces precision artifacts. We heavily utilize PostgreSQL's `Decimal(12,2)` and cast results manually back to standard JavaScript numerics securely at the service boundary.
+4. **JWT Rotation:** Refresh Tokens operate on a forced rotation strategy. Single-use hash tracking on the backend minimizes the window for replay attacks since using a stolen token automatically invalidates the session sequence.
+5. **Raw SQL for Dashboards:** Rather than awkwardly chaining Prisma aggregate methods, dashboard grouping routines manually execute raw query (`$queryRaw`) mapping. This is radically more performant for group-bys across dates/intervals.
+
+## Request Tracing
+
+Every incoming API request is tagged with a unique `X-Request-Id` (UUID). This ID traverses through the middleware boundary and is included in all application logs and error responses. It severely simplifies debugging server issues, as users can simply provide the trace ID from their network panel pointing back directly to the logged failure.
 
 ## Running Tests
 
-Requires a running test database (port 5433 via docker-compose):
+Tests are integrated with docker databases to simulate true end-to-end operational readiness. 
 
 ```bash
 docker-compose up -d
 
-# Set test database URL
-DATABASE_URL=postgresql://postgres:postgres@localhost:5433/finance_dashboard_test npx prisma migrate deploy
-
-# Run tests
-DATABASE_URL=postgresql://postgres:postgres@localhost:5433/finance_dashboard_test npm test
+# Using the unified CI command to set up and run all tests seamlessly:
+npm run test:ci
 ```
 
-## Key Design Decisions
+### Test Results
+Below are the expected passing metrics for the test suites verifying criteria requirements:
 
-1. **Soft Deletes** — Users and records are soft-deleted (`deletedAt` timestamp) to maintain data integrity and audit trail. All queries filter out soft-deleted rows.
-
-2. **Refresh Token Rotation** — Each refresh token use invalidates the old token and issues a new pair, mitigating token theft.
-
-3. **Hashed Refresh Tokens** — Refresh tokens are stored as SHA-256 hashes in the database, so a database breach does not leak valid tokens.
-
-4. **Rate Limiting** — Global rate limiter (100 req/15 min) + stricter auth-specific limiter (20 req/15 min) to prevent brute-force attacks.
-
-5. **Zod Validation** — Schema-based input validation at the middleware level ensures clean data reaches service layer.
-
-6. **Modular Architecture** — Each domain (auth, users, records, dashboard) is a self-contained module with its own validation, service, controller, and routes.
-
-7. **Decimal for Money** — Financial amounts use `Decimal(12,2)` in PostgreSQL to avoid floating-point precision issues.
-
-8. **Raw SQL for Analytics** — Dashboard aggregation queries use Prisma's `$queryRaw` for efficient GROUP BY operations that would be cumbersome with the ORM API.
+| Test Suite | Files | Coverage / Status | Description |
+|------------|-------|-------------------|-------------|
+| Authentication | `auth.test.ts` | Passing | Asserts JWT rotation, passwords validation, rate-limiting |
+| User Capabilities | `users.test.ts` | Passing | Validates RBAC isolation and self-deletion defenses |
+| Financial Records | `records.test.ts` | Passing | Checks CRUD enforcement alongside search logic |
+| Dashboard Graph | `dashboard.test.ts` | Passing | Confirms granular graphql restrictions and aggregated mapping |
 
 ## Environment Variables
 
