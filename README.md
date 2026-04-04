@@ -333,31 +333,90 @@ Tests are integrated with Docker databases to simulate true end-to-end operation
 # Bring up test DB instance
 docker-compose up -d
 
-# Unified CI testing
-npm run test:ci -- --verbose
+# Testing with detailed logs
+npx jest --verbose
 ```
 
-| Test Suite | Status | Description |
-|---|---|---|
-| Authentication | ✅ PASS | Asserts JWT rotation, passwords validation, rate-limiting |
-| User Capabilities | ✅ PASS | Validates RBAC isolation and self-deletion defenses |
-| Financial Records | ✅ PASS | Checks CRUD enforcement alongside search logic |
-| Dashboard Graph | ✅ PASS | Confirms granular graphql restrictions and aggregated mapping |
+PASS  tests/dashboard.test.ts (6.295 s)
+  GET /api/dashboard/summary
+    ✓ should return summary (Viewer) (43 ms)
+    ✓ should reject unauthenticated request (14 ms)
+  GET /api/dashboard/categories
+    ✓ should return category totals (45 ms)
+  GET /api/dashboard/trends/monthly
+    ✓ should return monthly trends (Analyst) (18 ms)                                        
+    ✓ should reject viewer accessing trends (9 ms)                                          
+  GET /api/dashboard/trends/weekly                                                          
+    ✓ should return weekly trends (Analyst) (14 ms)                                         
+  GET /api/dashboard/recent                                                                 
+    ✓ should return recent activity (18 ms)                                                 
+                                                                                            
+ PASS  tests/records.test.ts                                                                
+  POST /api/records
+    ✓ should create a record (Admin) (29 ms)                                                
+    ✓ should create an expense record (27 ms)                                               
+    ✓ should reject viewer creating record (7 ms)                                           
+    ✓ should reject invalid amount (6 ms)                                                   
+    ✓ should reject invalid type (8 ms)                                                     
+  GET /api/records                                                                          
+    ✓ should list records (Viewer) (45 ms)                                                  
+    ✓ should filter by type (12 ms)                                                         
+    ✓ should filter by date range (12 ms)                                                   
+    ✓ should search records (17 ms)                                                         
+  GET /api/records/:id                                                                      
+    ✓ should get a record by ID (11 ms)                                                     
+    ✓ should return 404 for non-existent record (8 ms)                                      
+  PATCH /api/records/:id                                                                    
+    ✓ should update a record (Admin) (25 ms)                                                
+    ✓ should reject viewer updating record (5 ms)                                           
+  DELETE /api/records/:id                                                                   
+    ✓ should soft-delete a record (Admin) (39 ms)                                           
+    ✓ should not find the deleted record (10 ms)                                            
+  POST /api/records/transfer                                                                
+    ✓ should create an expense and an income record atomically (Admin) (34 ms)              
+    ✓ should reject viewer transferring funds (8 ms)                                        
+    ✓ should reject transfer to the same category (6 ms)                                    
+  POST /api/records/batch                                                                   
+    ✓ should batch create multiple records (Admin) (32 ms)                                  
+    ✓ should reject viewer batch creating records (12 ms)                                   
+    ✓ should reject empty batch array (6 ms)
+                                                                                            
+ PASS  tests/users.test.ts                                                                  
+  GET /api/users/me
+    ✓ should return current user (9 ms)                                                     
+    ✓ should reject unauthenticated request (4 ms)                                          
+  POST /api/users (Admin)                                                                   
+    ✓ should create a user (40 ms)                                                          
+    ✓ should reject viewer creating user (7 ms)                                             
+  GET /api/users (Admin)                                                                    
+    ✓ should list users with pagination (27 ms)                                             
+    ✓ should filter users by role (13 ms)                                                   
+    ✓ should search users (9 ms)                                                            
+    ✓ should reject viewer listing users (6 ms)                                             
+  PATCH /api/users/:id (Admin)                                                              
+    ✓ should update user role (27 ms)                                                       
+  DELETE /api/users/:id (Admin)                                                             
+    ✓ should soft-delete a user (32 ms)                                                     
+                                                                                            
+ PASS  tests/auth.test.ts                                                                   
+  POST /api/auth/register
+    ✓ should register a new user (56 ms)                                                    
+    ✓ should reject duplicate email (41 ms)                                                 
+    ✓ should reject invalid email (8 ms)                                                    
+    ✓ should reject weak password (5 ms)                                                    
+  POST /api/auth/login                                                                      
+    ✓ should login with valid credentials (42 ms)
+    ✓ should reject invalid password (25 ms)
+    ✓ should reject non-existent email (8 ms)
+  POST /api/auth/refresh
+    ✓ should refresh tokens (25 ms)
+    ✓ should reject invalid refresh token (7 ms)
+  POST /api/auth/logout
+    ✓ should logout successfully (48 ms)
 
-## ⚙️ Environment Variables
+Test Suites: 4 passed, 4 total
+Tests:       48 passed, 48 total
+Snapshots:   0 total
+Time:        9.752 s
+Ran all test suites.
 
-| Variable | Description | Default |
-|---|---|---|
-| `PORT` | Server port | `3000` |
-| `NODE_ENV` | Environment | `development` |
-| `DATABASE_URL` | PostgreSQL connection string | — |
-| `JWT_SECRET` | Access token signing secret | — |
-| `JWT_EXPIRES_IN` | Access token TTL | `15m` |
-| `JWT_REFRESH_SECRET` | Refresh token signing secret | — |
-| `JWT_REFRESH_EXPIRES_IN` | Refresh token TTL | `7d` |
-| `RATE_LIMIT_WINDOW_MS` | Rate limit window | `900000` |
-| `RATE_LIMIT_MAX_REQUESTS` | Max requests per window | `100` |
-
-## 📄 License
-
-MIT License
