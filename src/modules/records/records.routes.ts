@@ -8,6 +8,8 @@ import {
   createRecordSchema,
   updateRecordSchema,
   listRecordsQuerySchema,
+  transferSchema,
+  batchCreateSchema,
 } from "./records.validation";
 
 const router = Router();
@@ -109,6 +111,72 @@ router.post(
   authorize(Role.ADMIN),
   validate(createRecordSchema),
   recordsController.createRecord
+);
+
+/**
+ * @openapi
+ * /api/records/transfer:
+ *   post:
+ *     tags: [Financial Records]
+ *     summary: Atomically transfer funds between categories (Admin only)
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [amount, fromCategory, toCategory, date]
+ *             properties:
+ *               amount: { type: number }
+ *               fromCategory: { type: string }
+ *               toCategory: { type: string }
+ *               date: { type: string, format: date }
+ *               description: { type: string }
+ *     responses:
+ *       201: { description: Transfer successful }
+ */
+router.post(
+  "/transfer",
+  authorize(Role.ADMIN),
+  validate(transferSchema),
+  recordsController.transferRecord
+);
+
+/**
+ * @openapi
+ * /api/records/batch:
+ *   post:
+ *     tags: [Financial Records]
+ *     summary: Atomically create multiple records (Admin only)
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [records]
+ *             properties:
+ *               records:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required: [amount, type, category, date]
+ *                   properties:
+ *                     amount: { type: number }
+ *                     type: { type: string, enum: [INCOME, EXPENSE] }
+ *                     category: { type: string }
+ *                     date: { type: string, format: date }
+ *                     description: { type: string }
+ *     responses:
+ *       201: { description: Batch created }
+ */
+router.post(
+  "/batch",
+  authorize(Role.ADMIN),
+  validate(batchCreateSchema),
+  recordsController.batchCreateRecords
 );
 
 /**

@@ -15,6 +15,7 @@ import { AppError } from "./utils/errors";
 import authRoutes from "./modules/auth/auth.routes";
 import usersRoutes from "./modules/users/users.routes";
 import recordsRoutes from "./modules/records/records.routes";
+import auditRoutes from "./modules/audit/audit.routes";
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/records", recordsRoutes);
+app.use("/api/audit-logs", auditRoutes);
 
 // GraphQL (Dashboard only)
 app.use(

@@ -134,3 +134,76 @@ export async function deleteRecord(id: string) {
     data: { deletedAt: new Date() },
   });
 }
+
+export async function transferFunds(
+  data: {
+    amount: number;
+    fromCategory: string;
+    toCategory: string;
+    date: string;
+    description?: string;
+  },
+  userId: string
+) {
+  if (data.fromCategory === data.toCategory) {
+    throw new Error("Cannot transfer to the same category");
+  }
+
+  const dateObj = new Date(data.date);
+  const baseDesc = data.description || `Transfer from ${data.fromCategory} to ${data.toCategory}`;
+
+  // Execute atomically
+  return prisma.$transaction([
+    prisma.financialRecord.create({
+      data: {
+        amount: data.amount,
+        type: RecordType.EXPENSE,
+        category: data.fromCategory,
+        date: dateObj,
+        description: baseDesc,
+        createdById: userId,
+      },
+      select: RECORD_SELECT,
+    }),
+    prisma.financialRecord.create({
+      data: {
+        amount: data.amount,
+        type: RecordType.INCOME,
+        category: data.toCategory,
+        date: dateObj,
+        description: baseDesc,
+        createdById: userId,
+      },
+      select: RECORD_SELECT,
+    }),
+  ]);
+}
+
+export async function batchCreate(
+  recordsData: Array<{
+    amount: number;
+    type: RecordType;
+    category: string;
+    date: string;
+    description?: string;
+  }>,
+  userId: string
+) {
+  const dataToInsert = recordsData.map((data) => ({
+    amount: data.amount,
+    type: data.type,
+    category: data.category,
+    date: new Date(data.date),
+    description: data.description,
+    createdById: userId,
+  }));
+
+  return prisma.$transaction(
+    dataToInsert.map((data) =>
+      prisma.financialRecord.create({
+        data,
+        select: RECORD_SELECT,
+      })
+    )
+  );
+}

@@ -8,6 +8,7 @@ export const config = {
   nodeEnv: process.env.NODE_ENV || "development",
   jwt: {
     secret: process.env.JWT_SECRET || "fallback-secret",
+    previousSecret: process.env.JWT_PREVIOUS_SECRET,
     expiresIn: process.env.JWT_EXPIRES_IN || "15m",
     refreshSecret: process.env.JWT_REFRESH_SECRET || "fallback-refresh-secret",
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",

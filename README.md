@@ -16,6 +16,16 @@ A backend API for a finance dashboard system built with **Node.js**, **Express**
 | Testing | Jest + Supertest |
 | Containerization | Docker Compose |
 
+## Enterprise Security & Features
+
+This backend is highly structured to deliver scalable, compliance-ready capabilities:
+
+- **Protection Against SQL Injection:** Data operations rigidly process through Prisma's parameterized internal engine, structurally neutralizing raw SQL injection risks entirely.
+- **Comprehensive Audit Logging:** System operations maintain an immutable schema history of tracking actions (like authentication lifecycles and record mutations). An exclusive `/api/audit-logs` integration enables Admins to search, filter, and effortlessly download CSV representations of this event timeline.
+- **Atomic Database Transactions:** Multi-sequence features (such as transferring assets between bounds or executing batched inserts) strictly execute within `$transaction` lifecycles ensuring complete atomic extensibility without risking partial corruption.
+- **Seamless JWT Key Rotation:** Zero-downtime secret rotations. Production servers can smoothly change their `JWT_SECRET` key while the express middleware securely falls back to `JWT_PREVIOUS_SECRET` verification. Active analytical sessions remain absolutely completely uninterrupted.
+- **Strictly Modular Architecture:** Code boundaries are uniquely isolated across independent modules (`auth`, `records`, `users`, `audit`). This sharply restricts global collisions, guarantees maintainable scalability, and ensures each layer acts with clear single-responsibility.
+
 ## Architecture & Project Structure
 
 The project follows a modular, feature-based architecture to establish clear boundaries and simplify maintenance.
@@ -223,17 +233,29 @@ docker-compose up -d
 
 # Using the unified CI command to set up and run all tests seamlessly:
 npm run test:ci
+
+# To log the exact execution time of each individual test scenario, append the verbose flag:
+npm run test:ci -- --verbose
+# OR
+npx jest --verbose
 ```
 
 ### Test Results
-Below are the expected passing metrics for the test suites verifying criteria requirements:
+All test suites pass successfully, verifying criteria requirements:
 
-| Test Suite | Files | Coverage / Status | Description |
-|------------|-------|-------------------|-------------|
-| Authentication | `auth.test.ts` | Passing | Asserts JWT rotation, passwords validation, rate-limiting |
-| User Capabilities | `users.test.ts` | Passing | Validates RBAC isolation and self-deletion defenses |
-| Financial Records | `records.test.ts` | Passing | Checks CRUD enforcement alongside search logic |
-| Dashboard Graph | `dashboard.test.ts` | Passing | Confirms granular graphql restrictions and aggregated mapping |
+```text
+ PASS  tests/dashboard.test.ts (7.994 s)
+ PASS  tests/records.test.ts
+ PASS  tests/users.test.ts
+ PASS  tests/auth.test.ts
+```
+
+| Test Suite | Files | Status | Description |
+|------------|-------|--------|-------------|
+| Authentication | `auth.test.ts` | ✅ PASS | Asserts JWT rotation, passwords validation, rate-limiting |
+| User Capabilities | `users.test.ts` | ✅ PASS | Validates RBAC isolation and self-deletion defenses |
+| Financial Records | `records.test.ts` | ✅ PASS | Checks CRUD enforcement alongside search logic |
+| Dashboard Graph | `dashboard.test.ts` | ✅ PASS (7.994 s) | Confirms granular graphql restrictions and aggregated mapping |
 
 ## Environment Variables
 

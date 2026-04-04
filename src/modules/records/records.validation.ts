@@ -28,3 +28,15 @@ export const listRecordsQuerySchema = z.object({
   sortBy: z.enum(["date", "amount", "createdAt"]).optional(),
   order: z.enum(["asc", "desc"]).optional(),
 });
+
+export const transferSchema = z.object({
+  amount: z.number().positive("Amount must be a positive number"),
+  fromCategory: z.string().min(1, "From category is required").max(50),
+  toCategory: z.string().min(1, "To category is required").max(50),
+  date: z.string().refine((val) => !isNaN(Date.parse(val)), "Invalid date format"),
+  description: z.string().max(500).optional(),
+});
+
+export const batchCreateSchema = z.object({
+  records: z.array(createRecordSchema).min(1, "At least one record is required").max(100, "Maximum 100 records per batch"),
+});

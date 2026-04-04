@@ -216,3 +216,119 @@ describe("DELETE /api/records/:id", () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe("POST /api/records/transfer", () => {
+  it("should create an expense and an income record atomically (Admin)", async () => {
+    const res = await request(app)
+      .post("/api/records/transfer")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        amount: 800,
+        fromCategory: "Bank A",
+        toCategory: "Bank B",
+        date: "2026-04-01",
+        description: "Transfer between banks",
+      });
+
+    expect(res.status).toBe(201);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.data.length).toBe(2);
+    
+    const expense = res.body.data.find((r: any) => r.type === "EXPENSE");
+    expect(expense).toBeDefined();
+    expect(expense.category).toBe("Bank A");
+    expect(Number(expense.amount)).toBe(800);
+
+    const income = res.body.data.find((r: any) => r.type === "INCOME");
+    expect(income).toBeDefined();
+    expect(income.category).toBe("Bank B");
+    expect(Number(income.amount)).toBe(800);
+  });
+
+  it("should reject viewer transferring funds", async () => {
+    const res = await request(app)
+      .post("/api/records/transfer")
+      .set("Authorization", `Bearer ${viewerToken}`)
+      .send({
+        amount: 500,
+        fromCategory: "Bank A",
+        toCategory: "Bank B",
+        date: "2026-04-01",
+      });
+
+    expect(res.status).toBe(403);
+  });
+
+  it("should reject transfer to the same category", async () => {
+    const res = await request(app)
+      .post("/api/records/transfer")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        amount: 500,
+        fromCategory: "Bank A",
+        toCategory: "Bank A",
+        date: "2026-04-01",
+      });
+
+    expect(res.status).not.toBe(201);
+  });
+});
+
+describe("POST /api/records/batch", () => {
+  it("should batch create multiple records (Admin)", async () => {
+    const res = await request(app)
+      .post("/api/records/batch")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        records: [
+          {
+            amount: 100,
+            type: "EXPENSE",
+            category: "Food Batch",
+            date: "2026-04-02",
+          },
+          {
+            amount: 1500,
+            type: "INCOME",
+            category: "Freelance Batch",
+            date: "2026-04-03",
+          },
+        ],
+      });
+
+    expect(res.status).toBe(201);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.data.length).toBe(2);
+    expect(res.body.data[0].category).toBe("Food Batch");
+    expect(res.body.data[1].category).toBe("Freelance Batch");
+  });
+
+  it("should reject viewer batch creating records", async () => {
+    const res = await request(app)
+      .post("/api/records/batch")
+      .set("Authorization", `Bearer ${viewerToken}`)
+      .send({
+        records: [
+          {
+            amount: 100,
+            type: "EXPENSE",
+            category: "Food",
+            date: "2026-04-02",
+          },
+        ],
+      });
+
+    expect(res.status).toBe(403);
+  });
+
+  it("should reject empty batch array", async () => {
+    const res = await request(app)
+      .post("/api/records/batch")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        records: [],
+      });
+
+    expect(res.status).toBe(400); 
+  });
+});

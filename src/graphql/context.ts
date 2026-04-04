@@ -67,7 +67,14 @@ export function getUserFromAuthHeader(authorization?: string): JwtPayload {
   const token = authorization.split(" ")[1];
   try {
     return jwt.verify(token, config.jwt.secret) as JwtPayload;
-  } catch {
+  } catch (err) {
+    if (config.jwt.previousSecret) {
+      try {
+        return jwt.verify(token, config.jwt.previousSecret) as JwtPayload;
+      } catch {
+        // Fallback failed as well, drop through to reject
+      }
+    }
     throw new UnauthorizedError("Invalid or expired token");
   }
 }
