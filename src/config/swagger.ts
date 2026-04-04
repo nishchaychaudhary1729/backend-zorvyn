@@ -10,7 +10,7 @@ const options: swaggerJsdoc.Options = {
         "Backend API for a finance dashboard system with role-based access control. Supports user management, financial record CRUD (REST), and dashboard analytics (GraphQL at /graphql).",
       contact: { name: "API Support" },
     },
-    servers: [{ url: "http://localhost:3000", description: "Development server" }],
+    servers: [{ url: "/", description: "Current server" }],
     components: {
       securitySchemes: {
         bearerAuth: {
@@ -21,13 +21,19 @@ const options: swaggerJsdoc.Options = {
       },
     },
   },
-  // Keep this list aligned with routes that are actually mounted in src/app.ts
-  // so Swagger UI doesn't advertise removed endpoints.
+  // Glob for both .ts (dev) and .js (production dist/) so annotations are
+  // discovered regardless of the runtime environment.
   apis: [
-    "./src/modules/auth/auth.routes.ts",
-    "./src/modules/users/users.routes.ts",
-    "./src/modules/records/records.routes.ts",
-    "./src/graphql/openapi.ts",
+    "./src/modules/auth/auth.routes.{ts,js}",
+    "./src/modules/users/users.routes.{ts,js}",
+    "./src/modules/records/records.routes.{ts,js}",
+    "./src/modules/audit/audit.routes.{ts,js}",
+    "./src/graphql/openapi.{ts,js}",
+    "./dist/modules/auth/auth.routes.js",
+    "./dist/modules/users/users.routes.js",
+    "./dist/modules/records/records.routes.js",
+    "./dist/modules/audit/audit.routes.js",
+    "./dist/graphql/openapi.js",
   ],
 };
 
