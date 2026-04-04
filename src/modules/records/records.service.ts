@@ -1,6 +1,6 @@
 import { Prisma, RecordType } from "@prisma/client";
 import prisma from "../../lib/prisma";
-import { NotFoundError } from "../../utils/errors";
+import { NotFoundError, BadRequestError } from "../../utils/errors";
 import { parsePagination } from "../../utils/pagination";
 
 const RECORD_SELECT = {
@@ -146,7 +146,7 @@ export async function transferFunds(
   userId: string
 ) {
   if (data.fromCategory === data.toCategory) {
-    throw new Error("Cannot transfer to the same category");
+    throw new BadRequestError("Cannot transfer to the same category");
   }
 
   const dateObj = new Date(data.date);

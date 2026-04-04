@@ -6,6 +6,7 @@ let analystToken: string;
 let viewerToken: string;
 
 beforeAll(async () => {
+  await prisma.auditLog.deleteMany();
   await prisma.refreshToken.deleteMany();
   await prisma.financialRecord.deleteMany();
   await prisma.user.deleteMany();
@@ -63,6 +64,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  await prisma.auditLog.deleteMany();
   await prisma.refreshToken.deleteMany();
   await prisma.financialRecord.deleteMany();
   await prisma.user.deleteMany();

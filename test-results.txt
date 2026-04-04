@@ -1,0 +1,112 @@
+﻿npx : PASS tests/dashboard.test.ts (5.394 s)
+At line:1 char:1
++ npx jest --verbose *>&1 | Out-File -FilePath 
+test-results.txt -Encodi ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PA 
+   SS tests/dashboard.test.ts (5.394 s):String  
+  ) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandErro 
+   r
+ 
+  GET /api/dashboard/summary
+    ΓêÜ should return summary (Viewer) (238 ms)
+    ΓêÜ should reject unauthenticated request 
+(47 ms)
+  GET /api/dashboard/categories
+    ΓêÜ should return category totals (82 ms)
+  GET /api/dashboard/trends/monthly
+    ΓêÜ should return monthly trends (Analyst) 
+(24 ms)
+    ΓêÜ should reject viewer accessing trends 
+(12 ms)
+  GET /api/dashboard/trends/weekly
+    ΓêÜ should return weekly trends (Analyst) 
+(16 ms)
+  GET /api/dashboard/recent
+    ΓêÜ should return recent activity (18 ms)
+
+PASS tests/records.test.ts
+  POST /api/records
+    ΓêÜ should create a record (Admin) (39 ms)
+    ΓêÜ should create an expense record (26 ms)
+    ΓêÜ should reject viewer creating record 
+(17 ms)
+    ΓêÜ should reject invalid amount (14 ms)
+    ΓêÜ should reject invalid type (9 ms)
+  GET /api/records
+    ΓêÜ should list records (Viewer) (35 ms)
+    ΓêÜ should filter by type (19 ms)
+    ΓêÜ should filter by date range (15 ms)
+    ΓêÜ should search records (12 ms)
+  GET /api/records/:id
+    ΓêÜ should get a record by ID (10 ms)
+    ΓêÜ should return 404 for non-existent 
+record (10 ms)
+  PATCH /api/records/:id
+    ΓêÜ should update a record (Admin) (27 ms)
+    ΓêÜ should reject viewer updating record (6 
+ms)
+  DELETE /api/records/:id
+    ΓêÜ should soft-delete a record (Admin) (26 
+ms)
+    ΓêÜ should not find the deleted record (9 
+ms)
+  POST /api/records/transfer
+    ΓêÜ should create an expense and an income 
+record atomically (Admin) (24 ms)
+    ΓêÜ should reject viewer transferring funds 
+(10 ms)
+    ΓêÜ should reject transfer to the same 
+category (6 ms)
+  POST /api/records/batch
+    ΓêÜ should batch create multiple records 
+(Admin) (27 ms)
+    ΓêÜ should reject viewer batch creating 
+records (7 ms)
+    ΓêÜ should reject empty batch array (6 ms)
+
+PASS tests/users.test.ts
+  GET /api/users/me
+    ΓêÜ should return current user (9 ms)
+    ΓêÜ should reject unauthenticated request 
+(4 ms)
+  POST /api/users (Admin)
+    ΓêÜ should create a user (68 ms)
+    ΓêÜ should reject viewer creating user (11 
+ms)
+  GET /api/users (Admin)
+    ΓêÜ should list users with pagination (26 
+ms)
+    ΓêÜ should filter users by role (12 ms)
+    ΓêÜ should search users (12 ms)
+    ΓêÜ should reject viewer listing users (7 
+ms)
+  PATCH /api/users/:id (Admin)
+    ΓêÜ should update user role (31 ms)
+  DELETE /api/users/:id (Admin)
+    ΓêÜ should soft-delete a user (34 ms)
+
+PASS tests/auth.test.ts
+  POST /api/auth/register
+    ΓêÜ should register a new user (67 ms)
+    ΓêÜ should reject duplicate email (47 ms)
+    ΓêÜ should reject invalid email (6 ms)
+    ΓêÜ should reject weak password (6 ms)
+  POST /api/auth/login
+    ΓêÜ should login with valid credentials (38 
+ms)
+    ΓêÜ should reject invalid password (31 ms)
+    ΓêÜ should reject non-existent email (10 ms)
+  POST /api/auth/refresh
+    ΓêÜ should refresh tokens (30 ms)
+    ΓêÜ should reject invalid refresh token (10 
+ms)
+  POST /api/auth/logout
+    ΓêÜ should logout successfully (73 ms)
+
+Test Suites: 4 passed, 4 total
+Tests:       48 passed, 48 total
+Snapshots:   0 total
+Time:        9.334 s
+Ran all test suites.

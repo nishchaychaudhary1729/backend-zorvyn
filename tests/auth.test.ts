@@ -10,12 +10,14 @@ const TEST_USER = {
 
 beforeAll(async () => {
   // Clean test data
+  await prisma.auditLog.deleteMany();
   await prisma.refreshToken.deleteMany();
   await prisma.financialRecord.deleteMany();
   await prisma.user.deleteMany();
 });
 
 afterAll(async () => {
+  await prisma.auditLog.deleteMany();
   await prisma.refreshToken.deleteMany();
   await prisma.financialRecord.deleteMany();
   await prisma.user.deleteMany();
