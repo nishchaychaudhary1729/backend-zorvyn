@@ -439,9 +439,15 @@ Ran all test suites.
 While the current architecture is comprehensive and robust, the following areas offer opportunities for future enhancement and scaling:
 
 - **Caching Layer (Redis):** Introduce Redis caching for frequent dashboard GraphQL queries and complex aggregations to minimize database hits during peak loads.
+
 - **Automated Data Export:** Implement asynchronous workers to generate detailed financial reports (PDF/CSV) dynamically and deliver them via email or bucket links.
+
+- **Post-Quantum Application Layer Security:** Prepare the system for future quantum threats by integrating quantum-resistant cryptographic primitives at the application layer.
+
 - **WebHooks & Notifications:** Add PubSub queues to trigger instant webhooks or real-time SSE notifications on significant actions (e.g. large transfers).
+
 - **Two-Factor Authentication (2FA):** Integrate TOTP-based 2FA algorithms to harden the JWT authentication flow securely against compromised credentials.
+
 - **Infrastructure CI/CD:** Establish robust Jenkins or Github Actions pipelines integrating static security testing and automated staging deployments.
 
 ## 📄 License
