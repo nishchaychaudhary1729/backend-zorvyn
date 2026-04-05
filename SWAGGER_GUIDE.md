@@ -4,8 +4,6 @@ This guide provides step-by-step instructions on how to use the Swagger UI to te
 
 ## 1. Seeded Test Data Credentials
 
-When you run the database seeder (`npm run seed` or `npx prisma db seed`), three user accounts are created, each with a specific role:
-
 | Role      | Email                   | Password        | Capabilities                                                      |
 |-----------|-------------------------|-----------------|-------------------------------------------------------------------|
 | **Admin** | `admin@finance.com`     | `Password123!`  | Has full access to everything (CRUD on Users, Records, etc.).     |
@@ -17,7 +15,7 @@ When you run the database seeder (`npm run seed` or `npx prisma db seed`), three
 Swagger requires you to explicitly authenticate to access protected routes. Here is how:
 
 ### Step 2.1: Login to get a Token
-1. Open your Swagger UI in the browser (usually at `http://localhost:3000/api-docs`).
+1. Open Swagger UI in the browser (`https://backend-zorvyn-3.onrender.com/api/docs/`).
 2. Scroll down to the **Auth** section and click on the `POST /api/auth/login` endpoint.
 3. Click **Try it out**.
 4. In the Request body, provide the email and password for the role you want to test. For example, to test as an Admin:
