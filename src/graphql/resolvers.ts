@@ -83,4 +83,21 @@ export const root = {
       };
     });
   },
+
+  dashboardCustomTrend: async (
+    args: { startDate: string; endDate: string },
+    ctx: GraphQLContext
+  ) => {
+    const user = requireAuth(ctx);
+    requireRole(user.role, [Role.VIEWER, Role.ANALYST, Role.ADMIN]);
+    
+    const start = new Date(args.startDate);
+    const end = new Date(args.endDate);
+    
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      throw new Error("Invalid start or end date provided.");
+    }
+    
+    return dashboardService.getCustomTrend(start, end);
+  },
 };

@@ -119,3 +119,49 @@ export async function getWeeklyTrends(weeks = 12) {
     count: r.count,
   }));
 }
+
+export async function getCustomTrend(startDate: Date, endDate: Date) {
+  const [incomeResult, expenseResult] = await Promise.all([
+    prisma.financialRecord.aggregate({
+      where: { type: "INCOME", deletedAt: null, date: { gte: startDate, lte: endDate } },
+      _sum: { amount: true },
+    }),
+    prisma.financialRecord.aggregate({
+      where: { type: "EXPENSE", deletedAt: null, date: { gte: startDate, lte: endDate } },
+      _sum: { amount: true },
+    }),
+  ]);
+
+  const totalIncome = Number(incomeResult._sum.amount || 0);
+  const totalExpenses = Number(expenseResult._sum.amount || 0);
+
+  type Row = { date_str: string; type: string; total: Prisma.Decimal; count: number };
+
+  const trends = await prisma.$queryRaw<Row[]>`
+    SELECT 
+      TO_CHAR(date, 'YYYY-MM-DD') as date_str,
+      type,
+      SUM(amount) as total,
+      COUNT(*)::int as count
+    FROM financial_records
+    WHERE deleted_at IS NULL
+      AND date >= ${startDate}
+      AND date <= ${endDate}
+    GROUP BY date_str, type
+    ORDER BY date_str ASC, type ASC
+  `;
+
+  return {
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+    totalIncome,
+    totalExpenses,
+    netBalance: totalIncome - totalExpenses,
+    trends: trends.map((r: Row) => ({
+      date: r.date_str,
+      type: r.type,
+      total: Number(r.total),
+      count: r.count,
+    })),
+  };
+}

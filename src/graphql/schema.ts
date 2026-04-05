@@ -47,11 +47,28 @@ export const schema = buildSchema(/* GraphQL */ `
     createdBy: ActivityUser!
   }
 
+  type DailyTrend {
+    date: String!
+    type: String!
+    total: Float!
+    count: Int!
+  }
+
+  type CustomTrendResult {
+    startDate: String!
+    endDate: String!
+    totalIncome: Float!
+    totalExpenses: Float!
+    netBalance: Float!
+    trends: [DailyTrend!]!
+  }
+
   type Query {
     dashboardSummary: DashboardSummary!
     dashboardCategoryTotals: [CategoryTotal!]!
     dashboardMonthlyTrends(months: Int = 12): [MonthlyTrend!]!
     dashboardWeeklyTrends(weeks: Int = 12): [WeeklyTrend!]!
     dashboardRecentActivity(limit: Int = 10): [RecentActivity!]!
+    dashboardCustomTrend(startDate: String!, endDate: String!): CustomTrendResult!
   }
 `);
