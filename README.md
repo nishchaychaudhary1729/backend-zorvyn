@@ -450,6 +450,8 @@ While the current architecture is comprehensive and robust, the following areas 
 
 - **Infrastructure CI/CD:** Establish robust Jenkins or Github Actions pipelines integrating static security testing and automated staging deployments.
 
+- **Prevention of Disposable Emails:** Prevent registration from disposable, temporary, and fake email addresses to ensure user authenticity and data quality.
+
 ## 📄 License
 
 MIT License
