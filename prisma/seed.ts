@@ -6,16 +6,13 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("Seeding database...");
 
-  // Clean existing data
-  await prisma.refreshToken.deleteMany();
-  await prisma.financialRecord.deleteMany();
-  await prisma.user.deleteMany();
-
   const passwordHash = await bcrypt.hash("Password123!", 8);
 
-  // Create users
-  const admin = await prisma.user.create({
-    data: {
+  // ✅ Upsert users (no duplicates, no deletion)
+  const admin = await prisma.user.upsert({
+    where: { email: "admin@finance.com" },
+    update: {},
+    create: {
       email: "admin@finance.com",
       password: passwordHash,
       name: "Admin User",
@@ -24,8 +21,10 @@ async function main() {
     },
   });
 
-  const analyst = await prisma.user.create({
-    data: {
+  const analyst = await prisma.user.upsert({
+    where: { email: "analyst@finance.com" },
+    update: {},
+    create: {
       email: "analyst@finance.com",
       password: passwordHash,
       name: "Analyst User",
@@ -34,8 +33,10 @@ async function main() {
     },
   });
 
-  const viewer = await prisma.user.create({
-    data: {
+  const viewer = await prisma.user.upsert({
+    where: { email: "viewer@finance.com" },
+    update: {},
+    create: {
       email: "viewer@finance.com",
       password: passwordHash,
       name: "Viewer User",
@@ -44,51 +45,52 @@ async function main() {
     },
   });
 
-  // Create financial records
-  const categories = {
-    income: ["Salary", "Freelance", "Investments", "Rental Income"],
-    expense: ["Food", "Rent", "Utilities", "Transport", "Entertainment", "Healthcare"],
-  };
+  // ✅ Only create records if none exist
+  const existingRecords = await prisma.financialRecord.count();
 
-  const records = [];
-  const now = new Date();
+  if (existingRecords === 0) {
+    const categories = {
+      income: ["Salary", "Freelance", "Investments", "Rental Income"],
+      expense: ["Food", "Rent", "Utilities", "Transport", "Entertainment", "Healthcare"],
+    };
 
-  for (let i = 0; i < 50; i++) {
-    const isIncome = Math.random() > 0.4;
-    const type = isIncome ? RecordType.INCOME : RecordType.EXPENSE;
-    const cats = isIncome ? categories.income : categories.expense;
-    const category = cats[Math.floor(Math.random() * cats.length)];
-    const amount = isIncome
-      ? (Math.random() * 5000 + 500).toFixed(2)
-      : (Math.random() * 1000 + 50).toFixed(2);
+    const records = [];
+    const now = new Date();
 
-    const daysAgo = Math.floor(Math.random() * 180);
-    const date = new Date(now);
-    date.setDate(date.getDate() - daysAgo);
+    for (let i = 0; i < 50; i++) {
+      const isIncome = Math.random() > 0.4;
+      const type = isIncome ? RecordType.INCOME : RecordType.EXPENSE;
+      const cats = isIncome ? categories.income : categories.expense;
+      const category = cats[Math.floor(Math.random() * cats.length)];
 
-    records.push({
-      amount: parseFloat(amount),
-      type,
-      category,
-      date,
-      description: `${type === RecordType.INCOME ? "Income" : "Expense"} - ${category} entry`,
-      createdById: admin.id,
-    });
+      const amount = isIncome
+        ? (Math.random() * 5000 + 500).toFixed(2)
+        : (Math.random() * 1000 + 50).toFixed(2);
+
+      const daysAgo = Math.floor(Math.random() * 180);
+      const date = new Date(now);
+      date.setDate(date.getDate() - daysAgo);
+
+      records.push({
+        amount: parseFloat(amount),
+        type,
+        category,
+        date,
+        description: `${type === RecordType.INCOME ? "Income" : "Expense"} - ${category} entry`,
+        createdById: admin.id,
+      });
+    }
+
+    await prisma.financialRecord.createMany({ data: records });
+
+    console.log(`  - ${records.length} financial records created`);
+  } else {
+    console.log("  - Financial records already exist, skipping...");
   }
 
-  await prisma.financialRecord.createMany({ data: records });
-
-  console.log("Seeded:");
-  console.log(`  - 3 users (admin, analyst, viewer)`);
-  console.log(`  - ${records.length} financial records`);
-  console.log("\nLogin credentials (all users): Password123!");
+  console.log("Seed completed safely ✅");
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .catch(console.error)
+  .finally(() => prisma.$disconnect());
