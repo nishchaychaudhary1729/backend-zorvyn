@@ -173,3 +173,29 @@ describe("GET /api/dashboard/recent", () => {
     expect(res.body.data.dashboardRecentActivity.length).toBeLessThanOrEqual(3);
   });
 });
+
+describe("GET /api/dashboard/customTrend", () => {
+  it("should return custom trend statistics", async () => {
+    const res = await request(app)
+      .post("/graphql")
+      .set("Authorization", `Bearer ${viewerToken}`)
+      .send({
+        query: `query($startDate: String!, $endDate: String!) { 
+          dashboardCustomTrend(startDate: $startDate, endDate: $endDate) { 
+            startDate 
+            endDate 
+            totalIncome 
+            totalExpenses 
+            netBalance 
+            trends { date type total count } 
+          } 
+        }`,
+        variables: { startDate: "2026-01-01", endDate: "2026-12-31" },
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveProperty("dashboardCustomTrend");
+    expect(res.body.data.dashboardCustomTrend).toHaveProperty("totalIncome");
+    expect(Array.isArray(res.body.data.dashboardCustomTrend.trends)).toBe(true);
+  });
+});
