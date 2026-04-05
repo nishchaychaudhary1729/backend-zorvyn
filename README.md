@@ -210,8 +210,8 @@ npx prisma migrate dev --name init
 npm run dev
 ```
 
-Server runs at `http://localhost:3000`.
-Explore API Docs via Swagger UI: `http://localhost:3000/api/docs`
+Server runs at `https://backend-zorvyn-3.onrender.com`.
+Explore API Docs via Swagger UI: `https://backend-zorvyn-3.onrender.com/api/docs`
 
 > **Note:** Seeded users (`admin@finance.com`, `analyst@finance.com`, `viewer@finance.com`) share the password: `Password123!`
 
@@ -306,7 +306,7 @@ REST dashboard endpoints are replaced by a single GraphQL endpoint (`POST /graph
 
 ### Example: Comprehensive Dashboard Query
 ```bash
-curl -X POST http://localhost:3000/graphql \
+curl -X POST https://backend-zorvyn-3.onrender.com/graphql \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
