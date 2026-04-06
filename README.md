@@ -16,7 +16,7 @@
 
 ## 🏗 High-Level System Architecture
 
-The system utilizes a modular Node.js/Express framework. Requests are heavily filtered through a robust middleware pipeline (Tracing -> Auth -> RBAC -> Validation) before entering isolated business domains. 
+The system utilizes a modular Node.js/Express framework. Requests are heavily filtered through a robust middleware pipeline (Auth -> RBAC -> Validation) before entering isolated business domains. 
 
 ```mermaid
 graph TD
@@ -26,7 +26,6 @@ graph TD
         Router[🛣 API Gateway / Router]
         
         subgraph "Middleware Pipeline"
-            Trace[🔍 X-Request-Id Tracing]
             Rate[⏳ Rate Limiting]
             AuthMW[🔐 JWT Verification]
             RBAC[🛡 Role-Based Access]
@@ -41,8 +40,8 @@ graph TD
             Audit[📜 Audit Logs]
         end
 
-        Router --> Trace
-        Trace --> Rate --> AuthMW --> RBAC --> Zod
+        Router --> Rate
+        Rate --> AuthMW --> RBAC --> Zod
         Zod --> Auth & Users & Records & GQL & Audit
     end
 
@@ -114,8 +113,6 @@ This backend is highly structured to deliver scalable, compliance-ready capabili
 
 - **Strictly Modular Architecture:** Code boundaries are uniquely isolated across independent modules (auth, records, users, audit). This sharply restricts global collisions and ensures single-responsibility.
 
-- **Request Tracing:** Every incoming API request is tagged with a unique `X-Request-Id` (UUID) which traverses through the middleware boundary and application logs.
-
 ## 🔄 JWT Rotation Implementation Flow
 
 Zero-downtime secret rotations and absolute session security. Refresh Tokens operate on a single-use hash tracking strategy.
@@ -151,7 +148,7 @@ src/
 ├── config/          # App config & Swagger setup (Environment validation, secrets mapping)
 ├── graphql/         # GraphQL schema & resolvers (Consolidates all dashboard analytics)
 ├── lib/             # Third-party instance singletons (e.g., Prisma client setup)
-├── middleware/      # Cross-cutting concerns (Auth, RBAC, Validation, Error Handling, Tracing)
+├── middleware/      # Cross-cutting concerns (Auth, RBAC, Validation, Error Handling)
 ├── modules/         # Feature domains
 │   ├── auth/        # Register, login, refresh, logout logic
 │   ├── users/       # User CRUD operations (Admin-only capabilities)
@@ -221,8 +218,8 @@ Every request follows a standardized pipeline ensuring predictability for fronte
 
 ```mermaid
 flowchart LR
-    Req[Incoming API Request] --> Trace[Assign X-Request-Id]
-    Trace --> ValidAuth{Valid JWT?}
+    Req[Incoming API Request] --> Rate[Rate Limiting]
+    Rate --> ValidAuth{Valid JWT?}
     ValidAuth -- No --> 401[401 Unauthorized]
     ValidAuth -- Yes --> RoleCheck{Has Role?}
     RoleCheck -- No --> 403[403 Forbidden]
@@ -253,8 +250,7 @@ flowchart LR
   "message": "Validation failed",
   "errors": {
     "body.email": ["Invalid email address"]
-  },
-  "requestId": "550e8400-e29b-41d4-a716-446655440000"
+  }
 }
 ```
 
@@ -437,6 +433,8 @@ Ran all test suites.
 ## 🌱 Other Scopes of Implementation
 
 While the current architecture is comprehensive and robust, the following areas offer opportunities for future enhancement and scaling:
+
+- **Distributed Request Tracing (OpenTelemetry):** Implement end-to-end distributed tracing using OpenTelemetry to assign unique trace/span IDs to every request. This would enable deep observability across the middleware pipeline, correlate logs with traces, and provide latency breakdowns per service layer — critical for diagnosing performance bottlenecks in production.
 
 - **Caching Layer (Redis):** Introduce Redis caching for frequent dashboard GraphQL queries and complex aggregations to minimize database hits during peak loads.
 

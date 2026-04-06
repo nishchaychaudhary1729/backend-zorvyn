@@ -23,7 +23,13 @@ const app = express();
 app.use(helmet());
 app.use(cors());
 if (process.env.NODE_ENV !== "test") {
-  app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
+  app.use(
+    morgan(
+      process.env.NODE_ENV === "production"
+        ? ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'
+        : ":method :url :status :response-time ms - :res[content-length]"
+    )
+  );
 }
 app.use(express.json({ limit: "10kb" }));
 app.use(rateLimiter);
